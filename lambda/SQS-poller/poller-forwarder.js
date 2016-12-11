@@ -79,7 +79,7 @@ function processMessage(message, callback) {
 function poll(functionName, callback) {
     const params = {
         QueueUrl: RX_QUEUE_URL,
-        MaxNumberOfMessages: 100,
+        MaxNumberOfMessages: 10,
         VisibilityTimeout: 30,
     };
     // batch request messages
