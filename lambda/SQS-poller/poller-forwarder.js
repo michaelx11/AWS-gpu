@@ -37,6 +37,7 @@ function invokePoller(functionName, message) {
         InvocationType: 'Event',
         Payload: new Buffer(JSON.stringify(payload)),
     };
+    console.log("Invoking: " + functionName + " for message: " + message); 
     return new Promise((resolve, reject) => {
         Lambda.invoke(params, (err) => (err ? reject(err) : resolve()));
     });
@@ -53,26 +54,28 @@ function bootWorkerInstance(config) {
 
 // TODO: Should probably use sendMessageBatch as an optimization
 function processMessage(message, callback) {
+    console.log("processing message!");
     console.log(message);
 
     // forward message to job SQS queue
     const txQueueParams = {
         QueueUrl: TX_QUEUE_URL,
-        MessageBody: message.MessageBody
+        MessageBody: message.Body,
     };
+    console.log(txQueueParams);
     // enqueue message on TX SQS queue
     SQS.sendMessage(txQueueParams, function(err, data) {
       if (err) {
         console.log(err, err.stack);
-        return;
+      } else {
+          console.log(data);
+          // delete message if we've successfully forwarded it
+          const rxQueueParams = {
+              QueueUrl: RX_QUEUE_URL,
+              ReceiptHandle: message.ReceiptHandle,
+          };
+          SQS.deleteMessage(rxQueueParams, (err) => callback(err, message));
       }
-      console.log(data);
-      // delete message if we've successfully forwarded it
-      const rxQueueParams = {
-          QueueUrl: RX_QUEUE_URL,
-          ReceiptHandle: message.ReceiptHandle,
-      };
-      SQS.deleteMessage(params, (err) => callback(err, message));
     });
 }
 
